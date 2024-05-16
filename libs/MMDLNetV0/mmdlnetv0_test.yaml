@@ -1,0 +1,36 @@
+# data attribution
+#data_dir: /home/lab_349/qy/_MVideo/MTSVRC/Origin/deep
+#modules: flow,mfcc,vision
+data_dir: /home/lab_349/qy/_MVideo/meipai/shuffle_data
+modules: scene,tra,mfcc
+
+# model attribution
+in_dims: 1024,1024,2206
+hid_dims: 128,128,256,32 # real out dims
+out_dims: 1024 # unused
+num_classes: 63
+
+# optimizer attribution
+model: MMDLNetV0
+job_dir: /home/lab_349/qy/应该是最后几次改了吧/2.更改shared的方式/1.concat后conv1d/5.给模态分权重（a=1.5）
+batch_size: 64 #64 16
+epochs: 100
+learning_rate: 0.005 #0.01
+scheduler: MultiStepLR,0.1,65,-1 #SGD,momentum=0.9,weight_decay=0.0001;
+#scheduler: MultiStepLR,0.1,90 150 190,-1
+optimizer: SGD,0.99,0.0001  #  SGD, betas, weight_decay
+num_workers: 2
+
+# model parameter
+active_domain_loss_step: 0
+alpha_weight: 0.1 #0.01
+beta_weight: 0.05 #0.075
+gamma_weight: 0.05 #0.25
+
+use_resume: False #True #
+resume_dir: /home/lab_349/qy/应该是最后几次改了吧/2.更改shared的方式/1.concat后conv1d/5.给模态分权重（a=1.5）
+checkpoint: best_model_90.75.pth.tar #checkpoint.pth.tar #
+test_only: True #
+print_freq: 100
+device: None
+gpu: 0
