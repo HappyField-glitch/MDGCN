@@ -130,8 +130,6 @@ class DynamicGraphConvolution_v(nn.Module):
 
         self.FAt = ScaledDotProductAttention(d_model=num_nodes, d_k=num_nodes, d_v=num_nodes, h=1)
         self.CAt = ScaledDotProductAttention(d_model=in_features, d_k=in_features, d_v=in_features, h=1)
-        # self.FAt = SimplifiedScaledDotProductAttention(d_model=num_nodes, h=1)
-        # self.CAt = SimplifiedScaledDotProductAttention(d_model=in_features,  h=1)
 
         self.dynamic_weight = nn.Conv1d(in_features, out_features, 1)
 
@@ -144,7 +142,6 @@ class DynamicGraphConvolution_v(nn.Module):
         self.v = float(0.1)
         self.a = float(1)
         self.t = float(1)
-        # self.D = float(1)
         self.hid_dim = int(512)
         self.attn_dropout_t = float(0.2)
         self.attn_dropout_a = float(0.1)
@@ -229,9 +226,7 @@ class DynamicGraphConvolution_v(nn.Module):
         # CAt, x_CAt = self.CAt(x, x, x) #(64,1,63,63)
         CAt, _ = self.CAt(x, x, x)
         CAt = CAt.view(CAt.size(0), CAt.size(2), -1)
-        # x = x + x_CAt
         x = x.transpose(1, 2)
-        # dynamic_adj = self.forward_construct_dynamic_graph(x)
         out_dynamic = self.forward_dynamic_gcn(x, dynamic_adj)
         x = x + out_dynamic
 
@@ -256,8 +251,6 @@ class DynamicGraphConvolution_t(nn.Module):
 
         self.FAt = ScaledDotProductAttention(d_model=num_nodes, d_k=num_nodes, d_v=num_nodes, h=1)
         self.CAt = ScaledDotProductAttention(d_model=in_features, d_k=in_features, d_v=in_features, h=1)
-        # self.FAt = SimplifiedScaledDotProductAttention(d_model=num_nodes, h=1)
-        # self.CAt = SimplifiedScaledDotProductAttention(d_model=in_features,  h=1)
 
         self.dynamic_weight = nn.Conv1d(in_features, out_features, 1)
 
@@ -329,15 +322,12 @@ class DynamicGraphConvolution_t(nn.Module):
         - Input: (B, C_in, N) # C_in: 1024, N: num_classes
         - Output: (B, C_out, N) # C_out: 1024, N: num_classes
         """
-        # static_adj = torch.eye(63).cuda()
 
         out_static = self.forward_static_gcn(x)
-        # out_static = self.forward_dynamic_gcn(x, static_adj)
         x = x + out_static  # residual
         out = x
 
         out_static_1 = self.forward_static_gcn(x_1)
-        # out_static_1 = self.forward_dynamic_gcn(x_1, static_adj)
         x_1 = x_1 + out_static_1  # residual
 
         FAt, x_FAt = self.FAt(x, x, x)
@@ -358,16 +348,8 @@ class DynamicGraphConvolution_t(nn.Module):
 
         dynamic_adj1 = dynamic_adj.cpu().numpy()
         dynamic_adj1 = dynamic_adj1[0]
-        # ax = plt.subplot()
-        # im = ax.imshow(dynamic_adj1)
-        # divider = make_axes_locatable(ax)
-        # cax = divider.append_axes("right", size="5%", pad=0.05)
-        # plt.colorbar(im, cax=cax)
-        # plt.show()
 
-        # dynamic_adj = torch.eye(63).cuda()
         out_dynamic = self.forward_dynamic_gcn(x, dynamic_adj)
-        # out_dynamic = self.forward_static_gcn(x)
         x = x + out_dynamic
 
         return x, dynamic_adj1
@@ -391,8 +373,6 @@ class DynamicGraphConvolution_a(nn.Module):
 
         self.FAt = ScaledDotProductAttention(d_model=num_nodes, d_k=num_nodes, d_v=num_nodes, h=1)
         self.CAt = ScaledDotProductAttention(d_model=in_features, d_k=in_features, d_v=in_features, h=1)
-        # self.FAt = SimplifiedScaledDotProductAttention(d_model=num_nodes, h=1)
-        # self.CAt = SimplifiedScaledDotProductAttention(d_model=in_features,  h=1)
 
         self.dynamic_weight = nn.Conv1d(in_features, out_features, 1)
 
@@ -405,7 +385,6 @@ class DynamicGraphConvolution_a(nn.Module):
         self.v = float(0.1)
         self.a = float(1)
         self.t = float(1)
-        # self.D = float(1)
         self.hid_dim = int(512)
         self.attn_dropout_t = float(0.2)
         self.attn_dropout_a = float(0.1)
@@ -512,8 +491,6 @@ class DynamicGraphConvolution_vat(nn.Module):
 
         self.FAt = ScaledDotProductAttention(d_model=num_nodes, d_k=num_nodes, d_v=num_nodes, h=1)
         self.CAt = ScaledDotProductAttention(d_model=in_features, d_k=in_features, d_v=in_features, h=1)
-        # self.FAt = SimplifiedScaledDotProductAttention(d_model=num_nodes, h=1)
-        # self.CAt = SimplifiedScaledDotProductAttention(d_model=in_features,  h=1)
 
         self.dynamic_weight = nn.Conv1d(in_features, out_features, 1)
 
@@ -526,7 +503,6 @@ class DynamicGraphConvolution_vat(nn.Module):
         self.v = float(0.1)
         self.a = float(1)
         self.t = float(1)
-        # self.D = float(1)
         self.hid_dim = int(512)
         self.attn_dropout_t = float(0.2)
         self.attn_dropout_a = float(0.1)
@@ -610,7 +586,6 @@ class DynamicGraphConvolution_vat(nn.Module):
         #(64,128,63)
         x_2 = x_2.transpose(1, 2)
 
-        # CAt, x_CAt = self.CAt(x, x, x) #(64,1,63,63)
         _, CAt = self.trans_v_with_at(x_1, x, x, x_2, x, x)
         CAt = CAt.view(CAt.size(0), CAt.size(2), -1)
         # x = x + x_CAt
@@ -640,8 +615,6 @@ class DynamicGraphConvolution_integ(nn.Module):
 
         self.FAt = ScaledDotProductAttention(d_model=num_nodes, d_k=num_nodes, d_v=num_nodes, h=1)
         self.CAt = ScaledDotProductAttention(d_model=in_features, d_k=in_features, d_v=in_features, h=1)
-        # self.FAt = SimplifiedScaledDotProductAttention(d_model=num_nodes, h=1)
-        # self.CAt = SimplifiedScaledDotProductAttention(d_model=in_features,  h=1)
 
         self.dynamic_weight = nn.Conv1d(in_features, out_features, 1)
 
@@ -789,9 +762,7 @@ class DynamicGraphConvolution_integ(nn.Module):
 if __name__ == '__main__':
     data = torch.rand(128, 256)
     Input_X = torch.rand(16, 1024, 63)
-    # Input_X = torch.rand(16, 2048)
     Input_Y = torch.rand(16, 2048)
-    # in_dim = [2048, 2048]
     in_dim = 1024
     out_dim = 256
     num_classes = 63
@@ -799,8 +770,6 @@ if __name__ == '__main__':
     use_softmax = False
     device = None
 
-    # model = LMFLayer(in_dim=in_dim, out_dim=out_dim, rank=rank, use_softmax=use_softmax)
-    # out = model(Input_X, Input_Y)
     model = DynamicGraphConvolution(in_features=in_dim, out_features=in_dim, num_nodes=num_classes, device=device)
     print(model)
     out = model(Input_X)
