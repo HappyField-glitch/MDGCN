@@ -34,14 +34,13 @@ class Run(object):
             self.args.device = torch.device('cpu')
 
         utils.record_config(self.args)
-        now = datetime.datetime.now().strftime('%Y:%m:%d:%H:%M:%S') #windows中文件名不能含有“：”
+        now = datetime.datetime.now().strftime('%Y:%m:%d:%H:%M:%S') # File names can't contain “:” in Windows.
         if self.args.test_only:
             self.logger = utils.get_logger(os.path.join(self.args.job_dir, 'logger'+now+'_Test.log'))
         else:
             self.logger = utils.get_logger(os.path.join(self.args.job_dir, 'logger'+now+'_Train.log'))
         self.logger.info('args = %s', self.args)
         self.model = eval(self.args.model)(self.args).to(self.args.device)
-        # torch.cuda.manual_seed(42)
         self.logger.info(self.model)
 
         self.optimizer = parser.get_optimizer(self.args, self.model)
@@ -52,7 +51,6 @@ class Run(object):
         self.gamma_weight = self.args.gamma_weight
 
         self.train_data = loader(self.args, split='train')
-        # self.train_data = loader(self.args, split='test')
         self.valid_data = loader(self.args, split='test')
         self.train_loader = DataLoader(self.train_data, batch_size=int(self.args.batch_size), num_workers=int(self.args.num_workers), shuffle=True, pin_memory=True, drop_last=True)
         self.valid_loader = DataLoader(self.valid_data, batch_size=int(self.args.batch_size), num_workers=int(self.args.num_workers), shuffle=False, pin_memory=True, drop_last=True)
@@ -78,21 +76,16 @@ class Run(object):
             optical = Variable(optical.to(self.args.device))
             audio = Variable(audio.to(self.args.device))
             label = Variable(label.to(self.args.device))
-            # try:
 
             p = float(i + (epoch - dann_epoch) * num_iter / (self.args.epochs - dann_epoch) / num_iter)
             p = (2. / (1. + np.exp(-10 * p)) - 1)/1000
             output, loss_cls, loss_diff, loss_simi, loss_mse = self.model(scene, optical, audio, label, p)
-            # output, loss_cls, loss_simi, loss_mse = self.model(scene, optical, audio, label, p)
 
             if self.current_step > active_domain_loss_step:
                 loss = loss_cls + loss_diff + loss_simi + loss_mse
-                # loss = loss_cls + loss_simi + loss_mse
-            # loss = loss_cls
 
             else:
                 loss = loss_diff + loss_simi + loss_mse
-                # loss = loss_simi + loss_mse
 
             total_mse += loss_mse
             total_diff += loss_diff
@@ -157,9 +150,7 @@ class Run(object):
                 label = label.to(self.args.device)
 
                 output, loss_cls, loss_diff, loss_simi, loss_mse = self.model(scene, optical, audio, label)
-                # output, loss_cls, loss_simi, loss_mse = self.model(scene, optical, audio, label)
                 loss = loss_cls + loss_diff + loss_simi + loss_mse
-                # loss = loss_cls + loss_simi + loss_mse
                 total_diff += loss_diff
                 total_simi += loss_simi
                 total_mse += loss_mse
@@ -201,14 +192,10 @@ class Run(object):
                                        num_workers=int(self.args.num_workers), shuffle=False, pin_memory=True,
                                        drop_last=True)
 
-        # self.valid_data = loader(self.args.data_dir, self.args.attribute, split='test')
-        # self.valid_loader = DataLoader(self.valid_data, batch_size=64, num_workers=2, shuffle=False, pin_memory=True, drop_last=False)
         self.logger.info('Test from the best model ...')
         checkpoint = torch.load(os.path.join(self.args.resume_dir, self.args.checkpoint))
         state_dict = checkpoint['state_dict']
-        # print(checkpoint['state_dict'])
         self.model.load_state_dict(state_dict)
-        # self.model.load_state_dict(checkpoint)
         total_map, total_one_error, total_coverage, total_ranking, total_hamming, total_print = 0., 0., 0., 0., 0., 0.
         start = time.time()
         self.model.eval()
@@ -219,26 +206,17 @@ class Run(object):
                 audio = audio.to(self.args.device)
                 label = label.to(self.args.device)
                 logit, loss_cls, loss_diff, loss_simi, loss_mse = self.model(scene, optical, audio, label)
-                # logit, loss_cls, loss_simi, loss_mse  = self.model(scene, optical, audio, label)
                 total_map += utils.cal_ap(logit, label).mean()
                 total_one_error += utils.cal_one_error(logit, label)
                 total_coverage += utils.cal_coverage(logit, label)
                 total_ranking += utils.cal_RankingLoss(logit, label)
                 total_hamming += utils.cal_HammingLoss(logit, label)
-                # total_print += print
         average_map = total_map / (i+1)
         average_one_error = total_one_error / (i+1)
         average_coverage = total_coverage / (i+1)
         average_ranking = total_ranking / (i+1)
         average_hamming = total_hamming / (i+1)
         average_print = total_print / (i + 1)
-        # dynamic_adj1 = average_print.cpu().numpy()
-        # dynamic_adj1 = dynamic_adj1[0]
-        # range = np.max(dynamic_adj1) - np.min(dynamic_adj1)
-        # dynamic_adj1 = (dynamic_adj1 - np.min(dynamic_adj1)) / range
-        # ax = plt.matshow(dynamic_adj1)
-        # plt.colorbar(ax.colorbar, fraction=0.025)
-        # plt.savefig(os.path.join('/home/lab_349/qy/_MVideo/最终实验结果/可视化/结果/'+ datetime.datetime.now().strftime('%Y:%m:%d:%H:%M:%S')+'.png'))
 
         self.logger.info('=> Test all indexes: '
                          'mAP: {map: .4f}, '
@@ -296,7 +274,7 @@ class Run(object):
 
                 if self.args.epochs - epoch <= 10:
                     self.last_map += valid_map
-                    if valid_map > last_map: # save best model among
+                    if valid_map > last_map: # save best model
                         last_map = valid_map
 
 
@@ -310,24 +288,14 @@ class Run(object):
             filename = os.path.join(self.args.job_dir, 'best_model_%.2f.pth.tar'%(best_map*100))
             shutil.copyfile(os.path.join(self.args.job_dir, 'best_model.pth.tar'), filename)
 
-            # plt.plot(self.x_axis_data, np.array(self.train_loss), 'r-', label='Training Set')
-            # plt.plot(self.x_axis_data, np.array(self.test_loss), 'b-', label='Test Set')
-            # plt.show()
-
         self.writer.close()
-        # self.logger.shutdown()
 
 
 if __name__ == '__main__':
     app = Run('./libs/MMDLNetV0/mmdlnetv0_base.yaml')
-    # app = Run(sys.argv[1])
     app.run()
     print('over')
 
-    # app = Run('./libs/MMDLNetV0/mmdlnetv0_test.yaml')
-    # # app = Run(sys.argv[1])
-    # app.run()
-    # print('over')
 
 
 
