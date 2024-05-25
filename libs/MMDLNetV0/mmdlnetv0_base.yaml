@@ -1,36 +1,33 @@
 # data attribution
-#data_dir: /home/lab_349/qy/_MVideo/MTSVRC/Origin/deep
 data_dir: /home/lab_349/qy/_MVideo/meipai/shuffle_data
-#modules: vision,flow,mfcc
 modules: scene,tra,mfcc
 
 # model attribution
-in_dims: 2048,2048 #,2206
+in_dims: 2048,2048 
 hid_dims: 128,128,256,32 # real out dims
 out_dims: 1024 # unused
 num_classes: 63
 
 # optimizer attribution
 model: MMDLNetV0
-job_dir: /home/lab_349/qy/_MVideo/最终实验结果/重新跑的实验/16.0325
+job_dir: /home/
 batch_size: 64 #64 16
 epochs: 80
 learning_rate: 0.001 #0.01 0.005
-# scheduler: ReduceLROnPlateau,10 #SGD,momentum=0.9,weight_decay=0.0001
 scheduler: MultiStepLR,0.1,65,-1
-optimizer: SGD,0.99,0.0001  #  SGD, betas, weight_decay
+optimizer: SGD,0.99,0.0001
 num_workers: 2
 
 # model parameter
 active_domain_loss_step: 0
-alpha_weight: 0.1 #0.01
-beta_weight: 0.05 #0.075 原版0.05
-gamma_weight: 0.05 #0.25 原版0.05
+alpha_weight: 0.1 
+beta_weight: 0.05 
+gamma_weight: 0.05 
 
-use_resume: False #True #
-resume_dir: /home/lab_349/qy/_MVideo/最终实验结果/重新跑的实验/16.0325
-checkpoint: best_model.pth.tar #checkpoint.pth.tar #
-test_only: True #True False
+use_resume: False 
+resume_dir: /home/
+checkpoint: best_model.pth.tar 
+test_only: True 
 print_freq: 100
 device: None
 gpu: 0
