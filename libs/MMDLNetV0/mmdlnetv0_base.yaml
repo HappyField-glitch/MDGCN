@@ -1,5 +1,5 @@
 # data attribution
-data_dir: /home/lab_349/qy/_MVideo/meipai/shuffle_data
+data_dir: /home/
 modules: scene,tra,mfcc
 
 # model attribution
