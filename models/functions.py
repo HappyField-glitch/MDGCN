@@ -64,19 +64,3 @@ class DiffLoss(nn.Module):
 
         return diff_loss
 
-# class DiffLoss(nn.Module):
-#
-#     def __init__(self):
-#         super(DiffLoss, self).__init__()
-#
-#     def forward(self, input1, input2):
-#         # 计算input1和input2之间的差异
-#         diff = input1 - input2
-#
-#         # 计算差异的F范数（Frobenius norm）
-#         diff_loss = torch.norm(diff, p='fro')
-#
-#         # 返回差异的平方，与原始代码保持一致的操作
-#         return diff_loss ** 2
-
-
