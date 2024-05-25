@@ -205,7 +205,6 @@ class Run(object):
 
 if __name__ == '__main__':
     app = Run('./libs/MMDLNetV0/mmdlnetv0_base.yaml')
-    # app = Run(sys.argv[1])
     app.run()
     print('over')
 
