@@ -180,30 +180,9 @@ class MMDLNetV0(nn.Module):
         encode_Ts = self.PreNet_S(T)
         encode_As = self.PreNet_S(A)
 
-
-        # encode_Vs1 = encode_Vs.unsqueeze(dim=1)
-        # encode_Ts1 = encode_Ts.unsqueeze(dim=1)
-        # encode_As1 = encode_As.unsqueeze(dim=1)
-
-        # shared_code, _ = self.trans_v_with_at(encode_As1, encode_Vs1, encode_Vs1, encode_Ts1, encode_Vs1, encode_Vs1)
-        # shared_code, _ = self.trans_v_with_t(encode_Ts1, encode_Vs1, encode_Vs1) #去掉a
-        # shared_code, _ = self.trans_v_with_a(encode_As1, encode_Vs1, encode_Vs1) #去掉t
-        # shared_code = shared_code.permute(1, 0, 2)
-        # shared_code = shared_code[0]
-
-        # self.W = nn.Parameter(torch.FloatTensor(torch.ones(self.out_dim, self.output_dim)), requires_grad=True).to(self.device)
-
-        # encode_Ts = 0.1 * encode_Ts
         encode_As = 1.5 * encode_As
-        # encode_Ts = 0.95 * encode_Ts
 
         shared_code = torch.cat((encode_Vs, encode_Ts, encode_As), dim=1)
-        # shared_code = torch.cat((encode_Vs, encode_Ts), dim=1) #消融a
-        # shared_code = torch.cat((encode_Vs, encode_As), dim=1) #消融t
-        # shared_code = torch.cat((encode_Ts, encode_As), dim=1) #消融v
-        # shared_code = encode_Vs #消融a，t
-        # shared_code = encode_As #消融v，t
-        # shared_code = encode_Ts #消融v，a
         shared_code = self.linear(shared_code.unsqueeze(2)).squeeze(2)
 
         decode_V = self.Decoder(torch.cat((shared_code, encode_V), dim=1)) #井老师：用shared_code与单独编码后的concat，再去解码算重构损失
@@ -215,56 +194,29 @@ class MMDLNetV0(nn.Module):
         loss_mse_T = self.loss_recon1(decode_T, T) + self.loss_recon2(decode_T, T)
         loss_mse_A = self.loss_recon1(decode_A, A) + self.loss_recon2(decode_A, A)
         loss_mse = self.alpha_weight * (loss_mse_V + loss_mse_T + loss_mse_A)
-        # loss_mse = self.alpha_weight * (loss_mse_V + loss_mse_T) #去掉a
-        # loss_mse = self.alpha_weight * (loss_mse_V + loss_mse_A)  # 去掉t
-        # loss_mse = self.alpha_weight * (loss_mse_T + loss_mse_A)  # 去掉v
-        # loss_mse = self.alpha_weight * (loss_mse_V) #消融a，t
-        # loss_mse = self.alpha_weight * (loss_mse_A) #消融v，t
-        # loss_mse = self.alpha_weight * (loss_mse_T) #消融v，a
         
         # pre modal
         reversed_shared_codeV = ReverseLayerF.apply(encode_Vs, p)
         share_V_label = self.D(reversed_shared_codeV)
-        # print(share_V_label)
-        # print(share_V_label.shape)
         reversed_shared_codeT = ReverseLayerF.apply(encode_Ts, p)
         share_T_label = self.D(reversed_shared_codeT)
-        # print(share_T_label)
         reversed_shared_codeA = ReverseLayerF.apply(encode_As, p)
         share_A_label = self.D(reversed_shared_codeA)
         
         # Adversarial Similarity Constraint
         modal_V_label = Variable(torch.zeros(share_V_label.size(0)).long()).to(self.device)
-        # print(modal_V_label)
-        # print(modal_V_label.shape)
         modal_T_label = Variable(torch.ones(share_T_label.size(0)).long()).to(self.device)
-        # print(modal_T_label)
-        modal_A_label = Variable(torch.ones(share_A_label.size(0)).long()*2).to(self.device) #原代码是long()*2
+        modal_A_label = Variable(torch.ones(share_A_label.size(0)).long()*2).to(self.device) 
         loss_simi_V = self.loss_similarity(share_V_label, modal_V_label)
         loss_simi_T = self.loss_similarity(share_T_label, modal_T_label)
         loss_simi_A = self.loss_similarity(share_A_label, modal_A_label)
         loss_simi = self.gamma_weight * (loss_simi_V + loss_simi_T + loss_simi_A)
-        # loss_simi = self.gamma_weight * (loss_simi_V + loss_simi_T) #去掉a
-        # loss_simi = self.gamma_weight * (loss_simi_V + loss_simi_A)  # 去掉t
-        # loss_simi = self.gamma_weight * (loss_simi_T + loss_simi_A)  # 去掉v
-        # loss_simi = self.gamma_weight * (loss_simi_V) #消融a，t
-        # loss_simi = self.gamma_weight * (loss_simi_A) #消融v，t
-        # loss_simi = self.gamma_weight * (loss_simi_T) #消融v，a
         
         # Orthogonality Constraint
-        # loss_diff_V = self.loss_diff(encode_V, encode_Vs)  # previous
-        # loss_diff_T = self.loss_diff(encode_T, encode_Ts)  # previous
-        # loss_diff_A = self.loss_diff(encode_A, encode_As)  # previous
         loss_diff_V = self.loss_diff(encode_V, encode_V) + self.loss_diff(encode_Vs, encode_Vs)
         loss_diff_T = self.loss_diff(encode_T, encode_T) + self.loss_diff(encode_Ts, encode_Ts)
         loss_diff_A = self.loss_diff(encode_A, encode_A) + self.loss_diff(encode_As, encode_As)
         loss_diff = 0.1 * self.beta_weight * (loss_diff_V + loss_diff_T + loss_diff_A)
-        # loss_diff = self.beta_weight * (loss_diff_V + loss_diff_T) #去掉a
-        # loss_diff = self.beta_weight * (loss_diff_V + loss_diff_A)  # 去掉t
-        # loss_diff = self.beta_weight * (loss_diff_T + loss_diff_A)  # 去掉v
-        # loss_diff = self.beta_weight * (loss_diff_V) #消融a，t
-        # loss_diff = self.beta_weight * (loss_diff_A) #消融v，t
-        # loss_diff = self.beta_weight * (loss_diff_T) #消融v，a
 
         vv = encode_V.view(encode_V.size(0), encode_V.size(1), 1)
         vv = vv.repeat(1, 1, self.output_dim)
@@ -275,41 +227,22 @@ class MMDLNetV0(nn.Module):
         vat = shared_code.view(shared_code.size(0), shared_code.size(1), 1)
         vat = vat.repeat(1, 1, self.output_dim)
 
-        # vv = encode_V1.view(encode_V1.size(0), encode_V1.size(1), 1)
-        # vv = vv.repeat(1, 1, self.output_dim)
-        # vt = encode_T1.view(encode_T1.size(0), encode_T1.size(1), 1)
-        # vt = vt.repeat(1, 1, self.output_dim)
-        # va = encode_A1.view(encode_A1.size(0), encode_A1.size(1), 1)
-        # va = va.repeat(1, 1, self.output_dim)
-        # vat = shared_code1.view(shared_code1.size(0), shared_code1.size(1), 1)
-        # vat = vat.repeat(1, 1, self.output_dim)
-        #(64,128,63)
-
         current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         # GCN
 
         #ZT
-        # vat0, static_v = self.gcn_vat(vv,vat,vt)
         vat0, adj_t = self.gcn_t(vat,vt)
         vat = vat + vat0
-        # scipy.io.savemat(f'adj/adj_t_{current_time}.mat', {'adj_t': adj_t})
 
         #ZA
-        # vat1, static_t = self.gcn_vat(zv,vat,va)
         vat1, adj_a = self.gcn_t(vat,va)
         vat = vat + vat1
-        # scipy.io.savemat(f'adj/adj_a_{current_time}.mat', {'adj_a': adj_a})
 
         #ZV
-        # vat2, static_a = self.gcn_vat(zv,vat,vv)
         vat2, adj_v = self.gcn_t(vat,vv)
         vat = vat + vat2
-        # scipy.io.savemat(f'adj/adj_v_{current_time}.mat', {'adj_v': adj_v})
-
-        # vat = vv + vt+ va + vat
 
         # final cls
-        # z_hat = torch.mul(self.W, vv) + torch.mul(self.W, vt) + torch.mul(self.W, va)
         score = self.last_linear(vat)  # B*num_classes*num_classes
         mask_mat = self.mask_mat.detach()
         score = (score * mask_mat).sum(-1)
@@ -318,4 +251,3 @@ class MMDLNetV0(nn.Module):
 
         
         return score, loss_cls, loss_diff, loss_simi, loss_mse
-        # return score, loss_cls, loss_simi, loss_mse
